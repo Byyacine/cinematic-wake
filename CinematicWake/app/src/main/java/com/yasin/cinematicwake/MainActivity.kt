@@ -31,7 +31,7 @@ class MainActivity : ComponentActivity() {
             CinematicWakeTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Greeting(
-                        name = "Android",
+                        name = "Word",
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
