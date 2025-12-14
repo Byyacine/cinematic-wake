@@ -1,5 +1,9 @@
 package com.yasin.cinematicwake
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -7,51 +11,63 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
-import com.yasin.cinematicwake.ui.theme.CinematicWakeTheme
-
+import com.yasin.cinematicwake.features.animation.AnimationSelectionStore
+import com.yasin.cinematicwake.features.animation.AnimationStoreActivity
 import com.yasin.cinematicwake.features.schedule.AlarmScheduler
 import com.yasin.cinematicwake.features.schedule.InMemoryScheduleRepository
+import com.yasin.cinematicwake.features.schedule.ScheduleActivity
+import com.yasin.cinematicwake.ui.home.HomeScreen
+import com.yasin.cinematicwake.ui.theme.CinematicWakeTheme
 
 class MainActivity : ComponentActivity() {
+
+    companion object {
+        private const val REQ_POST_NOTIFICATIONS = 1
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1) Schedule alarms once at app start
-        val repository = InMemoryScheduleRepository()
+        requestNotificationPermissionIfNeeded()
+
+        // Schedule alarms once at app start (now uses stored time)
+        val repository = InMemoryScheduleRepository(this)
         val scheduler = AlarmScheduler(this, repository)
         scheduler.scheduleAll()
 
-        // 2) Existing UI
         enableEdgeToEdge()
         setContent {
             CinematicWakeTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Word",
-                        modifier = Modifier.padding(innerPadding)
+
+                    val current = AnimationSelectionStore.getCurrent(this)
+
+                    HomeScreen(
+                        modifier = Modifier.padding(innerPadding),
+                        currentAnimation = current,
+                        onOpenAnimationStore = {
+                            startActivity(Intent(this, AnimationStoreActivity::class.java))
+                        },
+                        onOpenSchedule = {
+                            startActivity(Intent(this, ScheduleActivity::class.java))
+                        }
                     )
                 }
             }
         }
     }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    CinematicWakeTheme {
-        Greeting("Android")
+    private fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                requestPermissions(
+                    arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                    REQ_POST_NOTIFICATIONS
+                )
+            }
+        }
     }
 }

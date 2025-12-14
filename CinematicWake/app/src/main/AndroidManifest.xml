@@ -2,7 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -13,6 +15,7 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.CinematicWake"
         tools:targetApi="31">
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -23,14 +26,32 @@
             </intent-filter>
         </activity>
 
+        <!-- Full screen alarm activity shown over lockscreen -->
         <activity
             android:name=".features.animation.FullscreenAlarmActivity"
             android:exported="false"
+            android:showWhenLocked="true"
+            android:turnScreenOn="true"
+            android:excludeFromRecents="true"
+            android:theme="@style/Theme.CinematicWake.Alarm" />
+
+        <activity
+            android:name=".features.animation.AnimationStoreActivity"
+            android:exported="false"
             android:theme="@style/Theme.CinematicWake" />
 
+        <activity
+            android:name=".features.schedule.ScheduleActivity"
+            android:exported="false"
+            android:theme="@style/Theme.CinematicWake" />
+
+        <!-- Alarm broadcast receiver -->
         <receiver
             android:name=".features.schedule.AlarmReceiver"
             android:exported="false" />
+
+        <!-- ScreenOnReceiver no longer needed for this approach, so removed -->
+
     </application>
 
 </manifest>

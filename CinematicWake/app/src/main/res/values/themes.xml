@@ -2,4 +2,15 @@
 <resources>
 
     <style name="Theme.CinematicWake" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <style name="Theme.CinematicWake.Alarm" parent="Theme.CinematicWake">
+        <!-- Black background so we never see home/lock wallpaper behind content -->
+        <item name="android:windowBackground">@android:color/black</item>
+
+        <!-- Do not show the previous app snapshot while the activity is launching -->
+        <item name="android:windowDisablePreview">true</item>
+
+        <!-- Make sure the window is fully opaque -->
+        <item name="android:windowIsTranslucent">false</item>
+    </style>
 </resources>
