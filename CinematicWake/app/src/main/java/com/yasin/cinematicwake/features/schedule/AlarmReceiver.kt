@@ -18,7 +18,7 @@ class AlarmReceiver : BroadcastReceiver() {
     companion object {
         private const val CHANNEL_ID = "cinematic_wake_alarm_channel"
         private const val CHANNEL_NAME = "Cinematic Wake Alarms"
-        private const val NOTIFICATION_ID = 1001
+        const val NOTIFICATION_ID = 1001
     }
 
     override fun onReceive(context: Context, intent: Intent) {

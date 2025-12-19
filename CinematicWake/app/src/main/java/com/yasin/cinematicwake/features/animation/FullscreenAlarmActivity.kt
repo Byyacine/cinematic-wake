@@ -1,8 +1,6 @@
 package com.yasin.cinematicwake.features.animation
 
 import android.net.Uri
-import com.yasin.cinematicwake.features.animation.AnimationSelectionStore
-import com.yasin.cinematicwake.features.animation.AnimationChoice
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
@@ -10,7 +8,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -20,11 +17,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.viewinterop.AndroidView
-import com.yasin.cinematicwake.R
 import com.yasin.cinematicwake.ui.theme.CinematicWakeTheme
 import androidx.media3.common.MediaItem
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import com.yasin.cinematicwake.features.animation.AnimationSelectionStore
+import com.yasin.cinematicwake.features.animation.AnimationChoice
+import androidx.compose.foundation.clickable
+import com.yasin.cinematicwake.R
+import android.app.NotificationManager
+import android.content.Context
+import com.yasin.cinematicwake.features.schedule.AlarmReceiver
 
 class FullscreenAlarmActivity : ComponentActivity() {
 
@@ -58,8 +61,16 @@ class FullscreenAlarmActivity : ComponentActivity() {
     }
 
     private fun stopAndFinish() {
+        // Stop playback
         player?.pause()
         player?.seekTo(0)
+
+        // Cancel the alarm notification
+        val notificationManager =
+            getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        notificationManager.cancel(AlarmReceiver.NOTIFICATION_ID)
+
+        // Close the activity
         finish()
     }
 

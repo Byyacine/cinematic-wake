@@ -19,38 +19,72 @@ class AlarmScheduler(
 
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-        // Check exact-alarm capability before calling setExactAndAllowWhileIdle
+        // Respect exact alarm capability on Android 12+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val canScheduleExact = alarmManager.canScheduleExactAlarms()
             if (!canScheduleExact) {
                 Log.w("CinematicWake", "Cannot schedule exact alarms: permission not granted")
-                // For now, we stop here. Later we can add a fallback strategy.
                 return
             }
         }
 
-        for (alarm in alarms) {
-            val triggerTimeMillis = nextTriggerTimeMillis(alarm.hour, alarm.minute)
+        // Read the selected calendar date from the store
+        val (year, month, day) = ScheduleSelectionStore.getCurrentDate(context)
+        val nowMillis = System.currentTimeMillis()
+
+        alarms.forEach { alarm ->
+            val triggerTimeMillis = nextTriggerTimeMillis(
+                year = year,
+                month = month,
+                day = day,
+                hour = alarm.hour,
+                minute = alarm.minute
+            )
+
+            if (triggerTimeMillis <= nowMillis) {
+                // One-off semantics: if the selected date/time is in the past,
+                // we do NOT schedule anything automatically.
+                Log.w(
+                    "CinematicWake",
+                    "Selected date/time is in the past, not scheduling (id=${alarm.id})"
+                )
+                return@forEach
+            }
+
             val pendingIntent = createPendingIntent(context, alarm.id)
 
-            alarmManager.setExactAndAllowWhileIdle(
-                AlarmManager.RTC_WAKEUP,
-                triggerTimeMillis,
-                pendingIntent
-            )
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerTimeMillis,
+                    pendingIntent
+                )
+            } else {
+                alarmManager.setExact(
+                    AlarmManager.RTC_WAKEUP,
+                    triggerTimeMillis,
+                    pendingIntent
+                )
+            }
         }
     }
 
-    private fun nextTriggerTimeMillis(hour: Int, minute: Int): Long {
+    private fun nextTriggerTimeMillis(
+        year: Int,
+        month: Int,  // 1..12 (as stored in ScheduleSelectionStore)
+        day: Int,
+        hour: Int,
+        minute: Int
+    ): Long {
         val calendar = Calendar.getInstance().apply {
-            set(Calendar.SECOND, 0)
-            set(Calendar.MILLISECOND, 0)
+            set(Calendar.YEAR, year)
+            // Calendar months are 0-based, store is 1-based
+            set(Calendar.MONTH, month - 1)
+            set(Calendar.DAY_OF_MONTH, day)
             set(Calendar.HOUR_OF_DAY, hour)
             set(Calendar.MINUTE, minute)
-
-            if (timeInMillis <= System.currentTimeMillis()) {
-                add(Calendar.DAY_OF_YEAR, 1)
-            }
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
         }
         return calendar.timeInMillis
     }
@@ -59,7 +93,12 @@ class AlarmScheduler(
         fun createPendingIntent(context: Context, alarmId: Int): PendingIntent {
             val intent = Intent(context, AlarmReceiver::class.java)
 
-            val flags = PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            val flags = PendingIntent.FLAG_UPDATE_CURRENT or
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        PendingIntent.FLAG_IMMUTABLE
+                    } else {
+                        0
+                    }
 
             return PendingIntent.getBroadcast(
                 context,
